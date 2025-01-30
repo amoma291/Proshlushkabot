@@ -10,4 +10,4 @@ COPY . /project
 
 EXPOSE 5000
 
-CMD ['python', 'bot.py']
+CMD python bot.py
