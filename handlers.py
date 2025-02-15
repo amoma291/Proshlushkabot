@@ -9,11 +9,11 @@ import utils
 
 def answer_to_user(update: Update, context: CallbackContext):
     if update.message.chat.id in config.ADMINS and update.message.reply_to_message:
-        data = read_json()
+        data = read_json('questions.json')
         message_id = str(update.message.reply_to_message.message_id)
         forward_id = data.get(message_id)
         if forward_id:
-            remove_question_from_json(message_id)
+            remove_question_from_json('questions.json', message_id)
             try:
                 text = f'Ответ от админа:\n{update.message.text}'
                 context.bot.send_message(chat_id=forward_id, text=text)
