@@ -25,7 +25,7 @@ def remove_question_from_json(filename, message_id):
     data = read_json(filename)
     if message_id in data:
         del data[message_id]
-        write_json(data)
+        write_json('questions.json', data)
 
 
 def write_json(filename, data):
