@@ -9,11 +9,11 @@ import utils
 
 def answer_to_user(update: Update, context: CallbackContext):
     if update.message.chat.id in config.ADMINS and update.message.reply_to_message:
-        data = read_json('questions.json')  # {'2224': 6587453534}
+        data = read_json()
         message_id = str(update.message.reply_to_message.message_id)
-        forward_id = data.get(message_id)  # None
+        forward_id = data.get(message_id)
         if forward_id:
-            remove_question_from_json('questions.json', message_id)
+            remove_question_from_json(message_id)
             try:
                 text = f'Ответ от админа:\n{update.message.text}'
                 context.bot.send_message(chat_id=forward_id, text=text)
@@ -47,6 +47,16 @@ def answer_to_user(update: Update, context: CallbackContext):
 
 
 def greet_user(update: Update, context: CallbackContext):
+    """
+    Функция реагирует на команду /start и приветствует для пользователя
+
+    Args:
+        update (Update): Информация о текущем сообщении
+        cotext (CallbackContext): контекст бота
+
+    Returns:
+        ConversationHandler.END: окончание диалог
+    """
     name = update.message.chat.first_name
     if len(name) == 1 and ord(name) == 4448:
         name = update.message.chat.username
@@ -56,10 +66,11 @@ def greet_user(update: Update, context: CallbackContext):
         f'Привет, {name.capitalize()}! Выбери интересующий пункт',
         reply_markup=utils.get_kb(),
         )
+    return ConversationHandler.END
 
 
 def publish_post(update: Update, context: CallbackContext):
-    update.callback_query.answer('Публикую пост...')  # , show_alert=True)
+    update.callback_query.answer('Публикую пост...')
     data = update.callback_query.data
     text = update.callback_query.message.text
     photo = update.callback_query.message.photo
@@ -109,25 +120,29 @@ def publish_post(update: Update, context: CallbackContext):
             reply_markup=None,
         )
     if 'first_message' in context.user_data:
-        del context.user_data['first_message'] 
+        del context.user_data['first_message']
     if 'second_message' in context.user_data:
         del context.user_data['second_message']
 
 
 def send_message_to_admin(update: Update, context: CallbackContext):
-    update.message.reply_text('Ваше сообщение передано админу, ожидайте...')
-    user_id = update.message.chat.id
-
     text = update.message.text
-    for admin in config.ADMINS:
-        message = context.bot.send_message(
-            chat_id=admin,
-            text=text,
-        )
+    if text not in ('Опубликовать пост', 'Связаться с админом'):
+        update.message.reply_text('Ваше сообщение передано админу, ожидайте...')
+        user_id = update.message.chat.id
 
-    message_id = message.message_id
-    new_data = {message_id: user_id}   # {17: 345465763452}
-    append_to_json('questions.json', new_data)
+        text = update.message.text
+        for admin in config.ADMINS:
+            message = context.bot.send_message(
+                chat_id=admin,
+                text=text,
+            )
+
+        message_id = message.message_id
+        new_data = {message_id: user_id}
+        append_to_json(new_data)
+    else:
+        update.message.reply_text('Диалог с админом прерван')
     return ConversationHandler.END
 
 
@@ -188,12 +203,15 @@ def send_post_to_admin(update: Update, context: CallbackContext):
                     )
         else:
             text = update.message.text
-            for admin in config.ADMINS:
-                context.bot.send_message(
-                    chat_id=admin,
-                    text=text,
-                    reply_markup=utils.get_yes_or_no_inline_kb(),
-                )
+            if text not in ('Опубликовать пост', 'Связаться с админом'):
+                for admin in config.ADMINS:
+                    context.bot.send_message(
+                        chat_id=admin,
+                        text=text,
+                        reply_markup=utils.get_yes_or_no_inline_kb(),
+                    )
+            else:
+                update.message.reply_text('Создание поста прервано')
     return ConversationHandler.END
 
 
