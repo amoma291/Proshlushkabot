@@ -5,7 +5,7 @@ import os
 def append_to_json(new_data):
     current_data = read_json('questions.json')
     current_data.update(new_data)
-    write_json(current_data)
+    write_json(data=current_data)
 
 
 def join_path(filename):
