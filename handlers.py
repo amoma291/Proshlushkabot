@@ -1,14 +1,16 @@
 from telegram import Update
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ConversationHandler
+import os
 
-import config
+from dotenv import load_dotenv
 from json_funcs import append_to_json, read_json, remove_question_from_json
 import utils
 
+load_dotenv()
 
 def answer_to_user(update: Update, context: CallbackContext):
-    if update.message.chat.id in config.ADMINS and update.message.reply_to_message:
+    if update.message.chat.id in os.environ.get('ADMINS') and update.message.reply_to_message:
         data = read_json('questions.json')
         message_id = str(update.message.reply_to_message.message_id)
         forward_id = data.get(message_id)
@@ -37,7 +39,7 @@ def answer_to_user(update: Update, context: CallbackContext):
             else:
                 context.user_data['first_message']['reply_text'] = text
         else:
-            if update.message.forward_from_chat.id == config.CHANNEL_ID:
+            if update.message.forward_from_chat.id == os.environ.get('CHANNEL_ID'):
                 context.user_data['second_message'] = {
                     'message_id': update.message.message_id,
                     'forward_message_id': update.message.forward_from_message_id,
@@ -88,20 +90,20 @@ def publish_post(update: Update, context: CallbackContext):
             reply_to_message_id = context.user_data['second_message'].get('forward_message_id')
         if not photo and not video:
             context.bot.send_message(
-                chat_id=config.CHANNEL_ID,
+                chat_id=os.environ.get('CHANNEL_ID'),
                 text=text,
                 reply_to_message_id=reply_to_message_id,
             )
         elif video:
             context.bot.send_video(
-                chat_id=config.CHANNEL_ID,
+                chat_id=os.environ.get('CHANNEL_ID'),
                 video=video,
                 caption=text,
                 reply_to_message_id=reply_to_message_id,
             )
         else:
             context.bot.send_photo(
-                chat_id=config.CHANNEL_ID,
+                chat_id=os.environ.get('CHANNEL_ID'),
                 photo=photo,
                 caption=text,
                 reply_to_message_id=reply_to_message_id,
@@ -132,7 +134,7 @@ def send_message_to_admin(update: Update, context: CallbackContext):
         user_id = update.message.chat.id
 
         text = update.message.text
-        for admin in config.ADMINS:
+        for admin in os.environ.get('ADMINS'):
             message = context.bot.send_message(
                 chat_id=admin,
                 text=text,
@@ -153,7 +155,7 @@ def send_post_to_admin(update: Update, context: CallbackContext):
     if photo and not context.user_data.get('second_message'):
         photo = update.message.photo[-1]
         caption = update.message.caption
-        for admin in config.ADMINS:
+        for admin in os.environ.get('ADMINS'):
             context.bot.send_photo(
                 chat_id=admin,
                 photo=photo,
@@ -162,7 +164,7 @@ def send_post_to_admin(update: Update, context: CallbackContext):
             )
     elif video and not context.user_data.get('second_message'):
         caption = update.message.caption
-        for admin in config.ADMINS:
+        for admin in os.environ.get('ADMINS'):
             context.bot.send_video(
                 chat_id=admin,
                 video=video,
@@ -171,15 +173,15 @@ def send_post_to_admin(update: Update, context: CallbackContext):
             )
     else:
         if context.user_data.get('second_message'):
-            for admin in config.ADMINS:
+            for admin in os.environ.get('ADMINS'):
                 context.bot.forward_message(
                     chat_id=admin,
-                    from_chat_id=config.CHANNEL_ID,
+                    from_chat_id=os.environ.get('CHANNEL_ID'),
                     message_id=context.user_data['second_message']['forward_message_id']
                 )
             if 'reply_text' in context.user_data['first_message']:
                 text = context.user_data['first_message']['reply_text']
-                for admin in config.ADMINS:
+                for admin in os.environ.get('ADMINS'):
                     context.bot.send_message(
                         chat_id=admin,
                         text=text,
@@ -187,7 +189,7 @@ def send_post_to_admin(update: Update, context: CallbackContext):
                     )
             elif 'reply_photo' in context.user_data['first_message']:
                 photo = context.user_data['first_message']['reply_photo']
-                for admin in config.ADMINS:
+                for admin in os.environ.get('ADMINS'):
                     context.bot.send_photo(
                         chat_id=admin,
                         photo=photo,
@@ -195,7 +197,7 @@ def send_post_to_admin(update: Update, context: CallbackContext):
                     )
             elif 'reply_video' in context.user_data['first_message']:
                 video = context.user_data['first_message']['reply_video']
-                for admin in config.ADMINS:
+                for admin in os.environ.get('ADMINS'):
                     context.bot.send_video(
                         chat_id=admin,
                         video=video,
@@ -204,7 +206,7 @@ def send_post_to_admin(update: Update, context: CallbackContext):
         else:
             text = update.message.text
             if text not in ('Опубликовать пост', 'Связаться с админом'):
-                for admin in config.ADMINS:
+                for admin in os.environ.get('ADMINS'):
                     context.bot.send_message(
                         chat_id=admin,
                         text=text,
